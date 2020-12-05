@@ -1,12 +1,16 @@
 r"""KVNL - simple, ascii-based serialization"""
 
 __all__ = (
-    'get_hash',
+    'get_hash', 'algorithms_available', 'algorithms_guaranteed',
     'dump_empty_line', 'dumps_empty_line',
     'dump_line', 'dumps_line', 'load_line', 'loads_line',
     'dump_lines', 'dumps_lines', 'load_lines', 'loads_lines',
     'dump_block', 'dumps_block', 'load_block', 'loads_block',
+    'Serializer',
 )
+
+import hashlib
+from hashlib import algorithms_available, algorithms_guaranteed
 
 
 def get_hash(algo):
@@ -21,8 +25,6 @@ def get_hash(algo):
     <class '_hashlib.HASH'>
     'sha256'
     """
-
-    import hashlib
     try:
         return getattr(hashlib, algo)()
     except AttributeError as e:
@@ -61,12 +63,16 @@ def dump_line(stream, key: str, value: memoryview, sized=None, hash=None):
     """dump one line to stream"""
     if not key.isidentifier():
         raise ValueError(f'not a valid key: {key}')
-    key = key.encode('ascii')
+    ekey = key.encode('ascii')
     if sized is None:
         sized = b'\n' in value
     size = f':{len(value)}'.encode() if sized else b''
-    data = key, size, b'=', value, b'\n'
+    data = ekey, size, b'=', value, b'\n'
     if hash is not None:
+        if key == hash.name:
+            digest = hash.hexdigest().encode()
+            if digest != value:
+                raise ValueError(f'hash mismatch: expected {value}, got {digest}')
         for datum in data:
             hash.update(datum)
     stream.writelines(data)
@@ -232,14 +238,13 @@ def dumps_block(items, sized=None, hash=None, unhashed_items=None):
     b'a=hello\nc=world\nmd5=c5133712016d519e3b899e1db0fe7652\n\n'
 
     unhashed_items don't affect the hash
-    >>> dumps_block(dict(a=b'hello', c=b'world').items(), hash='md5', unhashed_items=dict(x=b'unhashed').items
-    ())
+    >>> dumps_block(dict(a=b'hello', c=b'world').items(), hash='md5', unhashed_items=dict(x=b'unhashed').items())
     b'a=hello\nc=world\nmd5=c5133712016d519e3b899e1db0fe7652\nx=unhashed\n\n'
     """
     return dumps_helper(dump_block, items, sized, hash, unhashed_items)
 
 
-def load_block(stream, hash=None, return_hash=False):
+def load_block(stream, hash=None, return_digest=False):
     """load a block of data from a stream"""
     if isinstance(hash, str):
         hash = get_hash(hash)
@@ -247,22 +252,54 @@ def load_block(stream, hash=None, return_hash=False):
         is_hash = hash is not None and key == hash.name
         if is_hash:
             hash = None
-        if return_hash or not is_hash:
+        if return_digest or not is_hash:
             yield key, value
 
 
-def loads_block(data: memoryview, hash=None, return_hash=False):
+def loads_block(data: memoryview, hash=None, return_digest=False):
     r"""load a block of data from a bytes-like object
 
     >>> dict(loads_block(b'a=hello\nc=world\nmd5=c5133712016d519e3b899e1db0fe7652\n\n', hash='md5'))
     {'a': b'hello', 'c': b'world'}
 
-    With return_hash=True, also returns the hash. Otherwise, it skips it:
-    >>> dict(loads_block(b'a=hello\nc=world\nmd5=c5133712016d519e3b899e1db0fe7652\n\n', hash='md5', return_has
-    h=True))
+    With return_digest=True, also returns the hash. Otherwise, it skips it:
+    >>> dict(loads_block(b'a=hello\nc=world\nmd5=c5133712016d519e3b899e1db0fe7652\n\n', hash='md5', return_digest=True))
     {'a': b'hello', 'c': b'world', 'md5': b'c5133712016d519e3b899e1db0fe7652'}
     """
-    return loads_helper2(load_block, data, hash, return_hash)
+    return loads_helper2(load_block, data, hash, return_digest)
+
+
+class Serializer:
+    def __init__(self, stream, sized=None, hash=None):
+        self.stream, self.sized = stream, sized
+        self.hash = get_hash(hash) if isinstance(hash, str) else hash
+
+    def reset_hash(self):
+        if self.hash is not None:
+            self.hash = get_hash(self.hash.name)
+
+    def dump_empty_line(self):
+        return dump_empty_line(self.stream)
+
+    def dump_line(self, key: str, value: memoryview):
+        return dump_line(self.stream, key, value, self.sized, self.hash)
+
+    def load_line(self):
+        return dump_line(self.stream, self.hash)
+
+    def dump_lines(self, items):
+        return dump_lines(self.stream, items, self.sized, self.hash)
+
+    def load_lines(self, eof_okay=True):
+        return load_lines(self.stream, self.hash, eof_okay)
+
+    def dump_block(self, items, unhashed_items=None):
+        self.reset_hash()
+        return dump_block(self.stream, items, self.sized, self.hash, unhashed_items)
+
+    def load_block(self, return_digest=False):
+        self.reset_hash()
+        return load_block(self.stream, self.hash, return_digest)
 
 
 if __name__ == '__main__':
