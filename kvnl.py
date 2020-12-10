@@ -6,7 +6,7 @@ __all__ = (
     'dump_line', 'dumps_line', 'load_line', 'loads_line',
     'dump_lines', 'dumps_lines', 'load_lines', 'loads_lines',
     'dump_block', 'dumps_block', 'load_block', 'loads_block',
-    'Serializer',
+    'Serializer', 'passthrough',
 )
 
 import hashlib
@@ -96,8 +96,7 @@ def dumps_line(key: str, value: memoryview, sized=None, hash=None):
     return dumps_helper(dump_line, key, value, sized, hash)
 
 
-def load_line(stream, hash=None):
-    """load one line from a stream"""
+def load_keyspec(stream):
     err = EOFError
     keyspec = bytearray()
     while True:
@@ -106,12 +105,15 @@ def load_line(stream, hash=None):
             raise err
         if char == b'\n':
             return None
-        if char != b'=':
-            keyspec.append(ord(char))
-        else:
+        keyspec.append(ord(char))
+        if char == b'=':
             break
         err = SyntaxError
-    key = keyspec.decode('ascii')
+    return keyspec
+
+
+def decode_keyspec(keyspec):
+    key = keyspec[:-1].decode('ascii')
     if ':' in key:
         key, size = key.split(':', maxsplit=1)
         size = int(size)
@@ -119,6 +121,16 @@ def load_line(stream, hash=None):
             raise SyntaxError
     else:
         size = None
+    return key, size
+
+
+def load_line(stream, hash=None):
+    """load one line from a stream"""
+    keyspec = load_keyspec(stream)
+    if keyspec is None:
+        return None
+
+    key, size = decode_keyspec(keyspec)
 
     if size is None:
         value = stream.readline().rstrip(b'\n')
@@ -136,7 +148,7 @@ def load_line(stream, hash=None):
             if digest != value:
                 raise ValueError(f'hash mismatch: expected {value}, got {digest}')
         else:
-            data = keyspec, b'=', value, b'\n'
+            data = keyspec, value, b'\n'
             for datum in data:
                 hash.update(datum)
 
@@ -300,6 +312,14 @@ class Serializer:
     def load_block(self, return_digest=False):
         self.reset_hash()
         return load_block(self.stream, self.hash, return_digest)
+
+
+def passthrough(stream):
+    keyspec = load_keyspec(stream)
+    if keyspec is None:
+        yield None, None
+    key, size = decode_keyspec(keyspec)
+    yield keyspec, size
 
 
 if __name__ == '__main__':
