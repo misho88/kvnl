@@ -64,6 +64,7 @@ def dump_line(stream, key: str, value: memoryview, sized=None, hash=None):
     if not key.isidentifier():
         raise ValueError(f'not a valid key: {key}')
     ekey = key.encode('ascii')
+    value = value.cast('b')
     if sized is None:
         sized = b'\n' in value
     size = f':{len(value)}'.encode() if sized else b''
@@ -109,7 +110,7 @@ def load_keyspec(stream):
         if char == b'=':
             break
         err = SyntaxError
-    return keyspec
+    return bytes(keyspec)
 
 
 def decode_keyspec(keyspec):
@@ -315,11 +316,13 @@ class Serializer:
 
 
 def passthrough(stream):
-    keyspec = load_keyspec(stream)
-    if keyspec is None:
-        yield None, None
-    key, size = decode_keyspec(keyspec)
-    yield keyspec, size
+    while True:
+        keyspec = load_keyspec(stream)
+        if keyspec is None:
+            yield None, None, None
+        else:
+            key, size = decode_keyspec(keyspec)
+            yield keyspec, key, size
 
 
 if __name__ == '__main__':
