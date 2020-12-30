@@ -64,9 +64,9 @@ def dump_line(stream, key: str, value: memoryview, sized=None, hash=None):
     if not key.isidentifier():
         raise ValueError(f'not a valid key: {key}')
     ekey = key.encode('ascii')
-    value = value.cast('b')
+    value = memoryview(value).cast('b')
     if sized is None:
-        sized = b'\n' in value
+        sized = ord('\n') in value
     size = f':{len(value)}'.encode() if sized else b''
     data = ekey, size, b'=', value, b'\n'
     if hash is not None:
