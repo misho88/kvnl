@@ -285,6 +285,7 @@ def loads_block(data: memoryview, hash=None, return_digest=False):
 class Serializer:
     def __init__(self, stream, sized=None, hash=None):
         self.stream, self.sized = stream, sized
+        self._hash_arg = hash
         self.hash = get_hash(hash) if isinstance(hash, str) else hash
 
     def reset_hash(self):
@@ -313,6 +314,11 @@ class Serializer:
     def load_block(self, return_digest=False):
         self.reset_hash()
         return load_block(self.stream, self.hash, return_digest)
+
+    def __repr__(self):
+        sized_str = f', sized={repr(self.sized)}' if self.sized is not None else ''
+        hash_str = f', hash={repr(self._hash_arg)}' if self.hash is not None else ''
+        return f'{__class__.__qualname__}({repr(self.stream)}{sized_str}{hash_str})'
 
 
 def passthrough(stream):
