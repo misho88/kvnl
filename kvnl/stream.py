@@ -86,5 +86,5 @@ class Stream(BaseStream, LoadingMixIn, DumpingMixIn):
     pass
 
 
-class BufferedStream(BaseStream, BufferedLoadingMixIn, DumpingMixIn):
+class BufferedStream(BufferedBaseStream, BufferedLoadingMixIn, DumpingMixIn):
     pass
