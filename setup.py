@@ -16,5 +16,5 @@ setuptools.setup(
     url='https://github.com/misho88/kvnl',
     packages=setuptools.find_packages(),
     python_requires='>=3.6',
-    py_modules=['kvnl']
+    #py_modules=['kvnl']
 )
