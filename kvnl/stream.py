@@ -41,11 +41,20 @@ class BaseStream:
     def reset_hash(self):
         self.hash = new_hash(self.hash.name) if self.hash is not None else None
 
+    def __repr__(self):
+        hash_str = '' if self.hash is None else f', hash={repr(self.hash.name)}'
+        return f'{type(self).__qualname__}({repr(self.stream)}{hash_str})'
+
 
 class BufferedBaseStream(BaseStream):
     def __init__(self, stream, hash=None, report_ready=False):
         super().__init__(stream, hash=hash)
-        self.report_ready = report_ready
+        self.report_ready = bool(report_ready)
+
+    def __repr__(self):
+        hash_str = '' if self.hash is None else f', hash={repr(self.hash.name)}'
+        report_ready_str = ', report_ready=True' if self.report_ready else ''
+        return f'{type(self).__qualname__}({repr(self.stream)}{hash_str}{report_ready_str})'
 
 
 class LoadingMixIn:
