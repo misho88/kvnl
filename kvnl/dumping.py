@@ -17,7 +17,10 @@ def dump_some(stream, data, *, hash=None):
     if data is None:
         return
     update_hash(hash, data)
-    return stream.write(data)
+    sz = stream.write(data)
+    if sz is None:
+        raise BlockingIOError('[Errno 11] write could not complete without blocking')
+    return sz
 
 
 def dump_newline(stream, *, hash=None):
