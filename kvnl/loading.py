@@ -63,7 +63,7 @@ def load_some(stream, size=None, delim=None, *, hash=None):
             continue
         pos += piece_size
         if piece_size == 0:
-            if size is None and delim is None:
+            if (size is None or size == 0) and delim is None:
                 break
             else:
                 raise EOFError
