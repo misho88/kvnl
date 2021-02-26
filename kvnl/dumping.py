@@ -93,7 +93,7 @@ def dump_line(stream, key_and_value, *, hash=None, sized=None):
 
     key, value = key_and_value
 
-    value = memoryview(value).cast('b')
+    value = memoryview(value).cast('b') if value else memoryview(b'')
 
     if hash is not None and key == hash.name:
         check_hash(hash, value.decode())
