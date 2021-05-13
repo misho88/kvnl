@@ -13,7 +13,7 @@ and is terminated with a newline (i.e., `NL`, `\n`, `0x0A`), referred to as the 
 
 An *empty line* is distinct from the above definition and contains only a trailing newline.
 
-The *key* follows mostly the same restrictions as an identifier in C (or Python, with the additional restriction that it can only contain ASCII characters). Dots `.` are also allowed, but all text adjacent to a dot must be an identifier (i.e., `.name` and `name.` are not allowed).
+The *key* is text which may not contain `:`, `=` or `\n`.
 
 The *value* is binary data. If the size is not provided, it must not include newlines. Otherwise, it is completely arbitrary. Note that there must be a trailing newline whether or not the size is provided.
 
@@ -32,6 +32,7 @@ If a key in a block is the name of a hashing algorithm (the reference implementa
 ## Examples
 
 Basic loading and dumping:
+
 ```
 >>> from kvnl import dumps_block, loads_block, new_hash
 >>> print(*loads_block(b'key=value\nkey.subkey=other value\n\n'), sep='\n')
@@ -42,12 +43,14 @@ b'key=value\nkey.subkey=other value\n\n'
 ```
 
 Sized values:
+
 ```
 >>> dumps_block(dict(a=b'has \n in it').items())
 b'a:11=has \n in it\n\n'
 ```
 
 Hashing:
+
 ```
 >>> dumps_block(dict(a=b'has \n in it').items(), hash=new_hash('md5'))
 b'a:11=has \n in it\nmd5=81155cefd40e370899ea959363968df4\n\n'

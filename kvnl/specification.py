@@ -2,9 +2,8 @@ __all__ = 'encode', 'decode'
 
 
 def check_name(key):
-    for tok in key.split('.'):
-        if not tok.isidentifier():
-            raise ValueError(f'invalid key: {repr(tok)} in {repr(key)} is not an isidentifier')
+    if any(c in key for c in ':=\n'):
+        raise ValueError(f'invalid key: {repr(tok)} in {repr(key)} is not an isidentifier')
 
 
 def encode(key, size=None):
