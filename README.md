@@ -25,6 +25,13 @@ A *message* is a sequence of blocks terminated by an empty line. Note that this 
 
 Higher-order constructs can be created similarly. That is, a sequence of messages would end with three empty lines.
 
+The simplest possible constructs to just send unnamed data are:
+
+```
+=<data without newlines>\n
+:<XYZ>=<XYZ bytes of any data>\n
+```
+
 ## Hashing
 
 If a key in a block is the name of a hashing algorithm (the reference implementation checks each of `hashlib.algorithms_available`; it is recommended to choose from `hashlib.algorithms_guaranteed`), then the value is treated as a hash of all preceding lines in the block, up to and including the preceding line's trailing newline. In general, this necessitates buffering data until such a line is found instead of updating the hash as data is being read, so a deserialization program could be told to anticipate the use of a particular algorithm. Since the hash only includes whatever precedes it, lines which should not be hashed (e.g., timestamps) can be included after the hash line.
