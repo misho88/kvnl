@@ -5,6 +5,7 @@ __all__ = (
     'dump_value', 'dumps_value',
     'dump_line', 'dumps_line',
     'dump_block', 'dumps_block',
+    'dump', 'dumps',
 )
 
 from .hashing import update_hash, check_hash
@@ -117,6 +118,16 @@ def dump_block(stream, lines, unhashed_lines=(), *, hash=None, sized=None):
     dump_newline(stream, hash=hash)
 
 
+def dump(stream, lines, hash=None, sized=None, dump_hash=False):
+    if hash is None and dump_hash:
+        raise ValueError('cannot dump hash when hash=None')
+
+    for line in lines:
+        dump_line(stream, line, hash=hash, sized=sized)
+    if dump_hash and hash is not None:
+        dump_line(stream, (hash.name, hash.hexdigest().encode()), hash=None, sized=sized)
+
+
 def to_buffer(func):
     from io import BytesIO
 
@@ -134,3 +145,4 @@ dumps_specification = to_buffer(dump_specification)
 dumps_value = to_buffer(dump_value)
 dumps_line = to_buffer(dump_line)
 dumps_block = to_buffer(dump_block)
+dumps = to_buffer(dump)

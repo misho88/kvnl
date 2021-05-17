@@ -5,6 +5,7 @@ __all__ = (
     'load_value', 'loads_value',
     'load_line', 'loads_line',
     'load_block', 'loads_block',
+    'load', 'loads',
 )
 
 
@@ -221,6 +222,14 @@ def load_block(stream, *, hash=None):
         yield subsection
 
 
+def load(stream, *, hash=None):
+    try:
+        while True:
+            yield from load_line(stream, hash=hash)
+    except EOFError:
+        pass
+
+
 def from_buffer(func):
     from io import BytesIO
 
@@ -236,3 +245,4 @@ loads_specification = from_buffer(load_specification)
 loads_value = from_buffer(load_value)
 loads_line = from_buffer(load_line)
 loads_block = from_buffer(load_block)
+loads = from_buffer(load)
