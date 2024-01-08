@@ -21,6 +21,8 @@ def dump_some(stream, data, *, hash=None):
     sz = stream.write(data)
     if sz is None:
         raise BlockingIOError('[Errno 11] write could not complete without blocking')
+    if sz < len(data):
+        return dump_some(stream, data[sz:])
     return sz
 
 
