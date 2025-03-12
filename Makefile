@@ -1,3 +1,7 @@
+PYTHON_SITE=$(shell python -c 'import sysconfig; print(sysconfig.get_path("purelib"))')
+MODULE_ROOT=kvnl
+MODULE_FILES=$(wildcard $(MODULE_ROOT)/*.py)
+
 GIT_BRANCH ?= "main"
 
 checkout:
@@ -5,6 +9,9 @@ checkout:
 pull:
 	git pull
 install:
-	./setup.py install
+	install -d $(PYTHON_SITE)/$(MODULE_ROOT)
+	install $(MODULE_FILES) $(PYTHON_SITE)/$(MODULE_ROOT)
+
 uninstall:
-	pip3 uninstall kvnl
+	cd $(PYTHON_SITE) && rm -f $(MODULE_FILES)
+	cd $(PYTHON_SITE) && rmdir $(MODULE_ROOT)
